@@ -1,0 +1,8 @@
+{
+  "name": "Smart Garden IoT Monitoring",
+  "description": "Aplikasi monitoring dan kontrol penyiraman tanaman berbasis IoT dengan protokol MQTT dan ESP32.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
