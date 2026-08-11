@@ -374,28 +374,21 @@ export default function App() {
     sendScheduleControl(newSched);
   };
 
-  // Historical Charts Data
-  const [historyData, setHistoryData] = useState<HistoryPoint[]>([
-    { time: '00:00', kelembaban: 52, waterLevel: 75 },
-    { time: '02:00', kelembaban: 50, waterLevel: 70 },
-    { time: '04:00', kelembaban: 45, waterLevel: 65 },
-    { time: '06:00', kelembaban: 68, waterLevel: 75 },
-    { time: '08:00', kelembaban: 65, waterLevel: 72 },
-    { time: '10:00', kelembaban: 60, waterLevel: 70 },
-    { time: '12:00', kelembaban: 58, waterLevel: 68 },
-    { time: '14:00', kelembaban: 63, waterLevel: 74 },
-    { time: '16:00', kelembaban: 56, waterLevel: 70 },
-    { time: '18:00', kelembaban: 52, waterLevel: 65 },
-    { time: '20:00', kelembaban: 51, waterLevel: 62 },
-    { time: '23:59', kelembaban: 50, waterLevel: 60 },
-  ]);
+  // Historical Charts Data (Awalnya kosong, akan terisi otomatis setiap 15 menit)
+  const [historyData, setHistoryData] = useState<HistoryPoint[]>([]);
 
   // System Operation Logs State
-  const [logs, setLogs] = useState<SystemLog[]>([
-    { id: '1', timestamp: '10:24:58', message: 'Koneksi MQTT ke broker.hivemq.com berhasil.', type: 'success' },
-    { id: '2', timestamp: '10:24:50', message: 'Sistem penyiraman otomatis ESP32 diinisialisasi.', type: 'info' },
-    { id: '3', timestamp: '10:24:45', message: 'IP Jaringan Wi-Fi didapatkan: 192.168.4.1', type: 'info' },
-  ]);
+  const [logs, setLogs] = useState<SystemLog[]>(() => {
+    const now = new Date();
+    const t1 = now.toTimeString().split(' ')[0];
+    const t2 = new Date(now.getTime() - 5000).toTimeString().split(' ')[0];
+    const t3 = new Date(now.getTime() - 12000).toTimeString().split(' ')[0];
+    return [
+      { id: '1', timestamp: t1, message: 'Koneksi MQTT ke broker.emqx.io berhasil (Live Mode).', type: 'success' },
+      { id: '2', timestamp: t2, message: 'Sistem penyiraman otomatis ESP32 berbasis Fuzzy Mamdani aktif.', type: 'info' },
+      { id: '3', timestamp: t3, message: 'IP Jaringan Wi-Fi didapatkan: 192.168.4.1 (SmartGarden-ESP32)', type: 'info' },
+    ];
+  });
 
   // Helper to push logs dynamically
   const addSystemLog = (message: string, type: 'info' | 'success' | 'warning' | 'danger') => {
@@ -416,6 +409,36 @@ export default function App() {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Periodic 15-minute sampling recorder for live history graph
+  useEffect(() => {
+    // Record current sensor values every 15 minutes (900,000 ms)
+    const historyInterval = setInterval(() => {
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      setHistoryData(prev => {
+        const newPoint: HistoryPoint = {
+          time: timeStr,
+          kelembaban: sensorData.kelembaban,
+          waterLevel: sensorData.waterLevel,
+        };
+        
+        // Prevent duplicate minute entries
+        if (prev.length > 0 && prev[prev.length - 1].time === timeStr) {
+          const updated = [...prev];
+          updated[updated.length - 1] = newPoint;
+          return updated;
+        }
+
+        // Keep up to 24 last points (6 hours of 15-min intervals)
+        const updated = [...prev, newPoint];
+        return updated.length > 24 ? updated.slice(updated.length - 24) : updated;
+      });
+    }, 15 * 60 * 1000); // 15 Menit
+
+    return () => clearInterval(historyInterval);
+  }, [sensorData.kelembaban, sensorData.waterLevel]);
 
   // Cyber-Physical Simulation Loop: Simulate fluid flow & plant evaporation
   useEffect(() => {
@@ -808,6 +831,8 @@ export default function App() {
               sensorData={sensorData} 
               setSensorData={setSensorData} 
               logs={logs}
+              setLogs={setLogs}
+              addSystemLog={addSystemLog}
               isPumpOn={pumpState.status}
               isValveOn={valveState.status}
             />

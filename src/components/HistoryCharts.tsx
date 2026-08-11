@@ -38,7 +38,23 @@ export default function HistoryCharts({ historyData }: HistoryChartsProps) {
 
   // Generate gridline Y-positions
   const yTicks = [100, 75, 50, 25, 0];
-  const xTicksIndices = [0, 2, 4, 6, 8, 10, 11]; // Ticks for 00:00, 04:00, 08:00, 12:00, 16:00, 20:00, 23:59
+  
+  // Calculate dynamic X-axis tick indices based on historyData length
+  const totalPoints = historyData.length;
+  const maxTicks = 7;
+  const xTicksIndices: number[] = [];
+  if (totalPoints > 0) {
+    if (totalPoints <= maxTicks) {
+      for (let i = 0; i < totalPoints; i++) xTicksIndices.push(i);
+    } else {
+      for (let i = 0; i < maxTicks; i++) {
+        const index = Math.round((i / (maxTicks - 1)) * (totalPoints - 1));
+        if (!xTicksIndices.includes(index)) {
+          xTicksIndices.push(index);
+        }
+      }
+    }
+  }
 
   // Create paths
   const buildPaths = (data: number[], color: string) => {
@@ -74,10 +90,15 @@ export default function HistoryCharts({ historyData }: HistoryChartsProps) {
         id="moisture-history-card"
       >
         {/* Title */}
-        <div className="flex items-center gap-2 mb-4" id="moisture-history-title">
-          <Leaf className="w-4 h-4 text-[#27ae60]" />
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Riwayat Kelembaban Tanah (Hari Ini)
+        <div className="flex items-center justify-between mb-4" id="moisture-history-title">
+          <div className="flex items-center gap-2">
+            <Leaf className="w-4 h-4 text-[#27ae60]" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Riwayat Kelembaban Tanah (Hari Ini)
+            </span>
+          </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-medium">
+            15 Menit / Titik
           </span>
         </div>
 
@@ -122,17 +143,32 @@ export default function HistoryCharts({ historyData }: HistoryChartsProps) {
             })}
 
             {/* Area Fill */}
-            <path d={moistureChart.areaPath} fill="url(#moistureAreaGrad)" />
+            {historyData.length > 0 && <path d={moistureChart.areaPath} fill="url(#moistureAreaGrad)" />}
 
             {/* Line Graph */}
-            <path 
-              d={moistureChart.linePath} 
-              stroke="#2ecc71" 
-              strokeWidth="2.5" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              className="drop-shadow-[0_2px_4px_rgba(46,204,113,0.3)]"
-            />
+            {historyData.length > 0 && (
+              <path 
+                d={moistureChart.linePath} 
+                stroke="#2ecc71" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="drop-shadow-[0_2px_4px_rgba(46,204,113,0.3)]"
+              />
+            )}
+
+            {/* Empty State Text */}
+            {historyData.length === 0 && (
+              <text
+                x={viewWidth / 2}
+                y={paddingTop + chartHeight / 2}
+                textAnchor="middle"
+                fontSize="11"
+                className="fill-slate-400 dark:fill-slate-500 font-medium"
+              >
+                Belum ada data riwayat (direkam otomatis setiap 15 menit)
+              </text>
+            )}
 
             {/* Interactive Points / Hover Targets */}
             {moistureChart.points.map((p, idx) => {
@@ -208,10 +244,15 @@ export default function HistoryCharts({ historyData }: HistoryChartsProps) {
         id="water-history-card"
       >
         {/* Title */}
-        <div className="flex items-center gap-2 mb-4" id="water-history-title">
-          <Droplets className="w-4 h-4 text-sky-500" />
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Riwayat Level Air (Hari Ini)
+        <div className="flex items-center justify-between mb-4" id="water-history-title">
+          <div className="flex items-center gap-2">
+            <Droplets className="w-4 h-4 text-sky-500" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Riwayat Level Air (Hari Ini)
+            </span>
+          </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 font-medium">
+            15 Menit / Titik
           </span>
         </div>
 
@@ -256,17 +297,32 @@ export default function HistoryCharts({ historyData }: HistoryChartsProps) {
             })}
 
             {/* Area Fill */}
-            <path d={waterChart.areaPath} fill="url(#waterAreaGrad)" />
+            {historyData.length > 0 && <path d={waterChart.areaPath} fill="url(#waterAreaGrad)" />}
 
             {/* Line Graph */}
-            <path 
-              d={waterChart.linePath} 
-              stroke="#3498db" 
-              strokeWidth="2.5" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              className="drop-shadow-[0_2px_4px_rgba(52,152,219,0.3)]"
-            />
+            {historyData.length > 0 && (
+              <path 
+                d={waterChart.linePath} 
+                stroke="#3498db" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="drop-shadow-[0_2px_4px_rgba(52,152,219,0.3)]"
+              />
+            )}
+
+            {/* Empty State Text */}
+            {historyData.length === 0 && (
+              <text
+                x={viewWidth / 2}
+                y={paddingTop + chartHeight / 2}
+                textAnchor="middle"
+                fontSize="11"
+                className="fill-slate-400 dark:fill-slate-500 font-medium"
+              >
+                Belum ada data riwayat (direkam otomatis setiap 15 menit)
+              </text>
+            )}
 
             {/* Interactive Points / Hover Targets */}
             {waterChart.points.map((p, idx) => {
